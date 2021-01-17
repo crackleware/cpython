@@ -411,6 +411,31 @@ sys_audit(PyObject *self, PyObject *const *args, Py_ssize_t argc)
     Py_RETURN_NONE;
 }
 
+PyDoc_STRVAR(breakloop_doc,
+"breakloop(enabled)\n\
+\n\
+if enabled is 1, execution will be continued. otherwise it won't be continued.\n\
+exceptions will be propagated.");
+
+extern size_t breakloop_enabled = 0;
+
+static PyObject *
+sys_breakloop(PyObject *self, PyObject *const *args, Py_ssize_t argc)
+{
+    if (argc == 0) {
+        PyErr_SetString(PyExc_TypeError, "missing 1 required positional argument");
+        return NULL;
+    }
+
+    PyObject *enabled = args[0];
+    if (!PyLong_Check(enabled)) {
+        PyErr_Format(PyExc_TypeError, "expected int for argument");
+        return NULL;
+    }
+    breakloop_enabled = PyLong_AsSsize_t(enabled);
+
+    Py_RETURN_NONE;
+}
 
 static PyObject *
 sys_breakpointhook(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *keywords)
@@ -1948,6 +1973,7 @@ static PyMethodDef sys_methods[] = {
     /* Might as well keep this in alphabetic order */
     SYS_ADDAUDITHOOK_METHODDEF
     {"audit",           (PyCFunction)(void(*)(void))sys_audit, METH_FASTCALL, audit_doc },
+    {"breakloop",       (PyCFunction)(void(*)(void))sys_breakloop, METH_FASTCALL, breakloop_doc },
     {"breakpointhook",  (PyCFunction)(void(*)(void))sys_breakpointhook,
      METH_FASTCALL | METH_KEYWORDS, breakpointhook_doc},
     SYS_CALLSTATS_METHODDEF

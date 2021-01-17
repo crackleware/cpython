@@ -28,6 +28,8 @@
 
 #include <ctype.h>
 
+extern size_t breakloop_enabled;
+
 #ifdef Py_DEBUG
 /* For debugging the interpreter: */
 #define LLTRACE  1      /* Low-level trace feature */
@@ -121,6 +123,7 @@ static size_t opcache_global_opts = 0;
 static size_t opcache_global_hits = 0;
 static size_t opcache_global_misses = 0;
 #endif
+
 
 #define GIL_REQUEST _Py_atomic_load_relaxed(&ceval->gil_drop_request)
 
@@ -3718,9 +3721,15 @@ error:
         /* Log traceback info. */
         PyTraceBack_Here(f);
 
-        if (tstate->c_tracefunc != NULL)
+        if (tstate->c_tracefunc != NULL) {
             call_exc_trace(tstate->c_tracefunc, tstate->c_traceobj,
                            tstate, f);
+            if (breakloop_enabled) {
+                breakloop_enabled = 0;
+                _PyErr_Clear(tstate);
+                goto dispatch_opcode;
+            }
+        }
 
 exception_unwind:
         /* Unwind stacks if an exception occurred */
